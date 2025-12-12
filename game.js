@@ -489,7 +489,6 @@ function resizeCanvas(){
 window.addEventListener('resize', resizeCanvas);
 
 // set initial slider display and unlock on first gesture
-sensitivityValueEl.textContent = baseSpeed;
 window.addEventListener('touchstart', ()=>unlockAudio(), {passive:true});
 window.addEventListener('mousedown', ()=>unlockAudio(), {passive:true});
 
@@ -498,26 +497,33 @@ resizeCanvas();
 // show start menu and prepare a preview (do not start until user picks)
 if(startMenu){
   startMenu.classList.remove('hidden');
+  console.log('Start menu displayed');
   // difficulty selection buttons in menu
   const menuBtns = Array.from(startMenu.querySelectorAll('.start-btn:not(.primary)'));
   // disable start button initially
   if(startBtn) startBtn.disabled = true;
-  
+
   menuBtns.forEach(b=>{
     const diff = b.dataset.diff;
-    b.addEventListener('click', ()=>{
+    const select = (ev)=>{
+      if(ev && ev.preventDefault) ev.preventDefault();
       // highlight selection
       menuBtns.forEach(x=>x.classList.remove('selected'));
       b.classList.add('selected');
       // enable start button once a selection is made
       if(startBtn) startBtn.disabled = false;
-    });
+      console.log('Difficulty selected (menu):', diff);
+    };
+    b.addEventListener('click', select);
+    b.addEventListener('touchstart', select, {passive:false});
+    b.addEventListener('pointerdown', select);
   });
   // start button: optionally request fullscreen first, then start
   if(startBtn){
     startBtn.addEventListener('click', async ()=>{
       const sel = menuBtns.find(x=>x.classList.contains('selected'));
       const diff = sel ? sel.dataset.diff : 'normal';
+      console.log('Start pressed, selected difficulty:', diff);
       await maybeEnterFullscreenBeforeStart();
       startGameWithDifficulty(diff);
     });
