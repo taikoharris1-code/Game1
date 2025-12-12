@@ -115,10 +115,13 @@ button:active{transform:translateY(1px)}
 .start-overlay h2{margin:0 0 6px}
 .start-overlay p{margin:0 0 12px;color:#9fb6d8}
 .start-options{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.start-btn{background:#1f6feb;border:none;color:white;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+.start-btn{background:#1f6feb;border:none;color:white;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:600;transition:all 120ms ease}
+.start-btn:hover{background:#2e7ef5;transform:translateY(-1px);box-shadow:0 4px 12px rgba(31,111,235,0.25)}
 .start-btn:active{transform:translateY(1px)}
-.start-btn.selected{background:#0ea5e9;box-shadow:0 6px 18px rgba(14,165,233,0.12)}
+.start-btn.selected{background:#0ea5e9;box-shadow:0 6px 18px rgba(14,165,233,0.25)}
+.start-btn.selected:hover{background:#06b6d4}
 .start-btn.primary{background:#06b6d4}
+.start-btn.primary:hover{background:#0891b2;transform:translateY(-1px)}
 .start-controls{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:12px}
 .start-controls label{color:#cfeafc}
 .start-overlay.hidden{display:none}
