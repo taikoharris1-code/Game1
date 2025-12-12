@@ -70,6 +70,7 @@ function reset(){
   scoreEl.textContent = 'Score: 0';
   if(timer) clearInterval(timer);
   timer = setInterval(step, speed);
+  draw();
 }
 
 function placeFood(){
@@ -81,6 +82,8 @@ function placeFood(){
 
 function step(){
   if(!running) return;
+  // don't advance the game until the player sets a direction
+  if(dir.x === 0 && dir.y === 0){ draw(); return; }
   const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
   // wrap-around behavior
   head.x = (head.x + GRID) % GRID;
