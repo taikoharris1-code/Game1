@@ -7,6 +7,8 @@ const startMenu = document.getElementById('startMenu');
 const startBtn = document.getElementById('startBtn');
 const startFullscreenCheckbox = document.getElementById('startFullscreen');
 const touchControls = document.getElementById('touch-controls');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const canvasWrapper = document.querySelector('.canvas-wrapper');
 
 function startGameWithDifficulty(diff){
   // set baseSpeed directly from difficulty preset
