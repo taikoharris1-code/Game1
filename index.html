@@ -24,12 +24,19 @@
     <div id="hint">Use arrow keys to move. Space to pause.</div>
 
     <div id="touch-controls" class="touch-hidden" aria-hidden="true">
-      <button class="dir up">▲</button>
-      <div class="hrow">
-        <button class="dir left">◀</button>
-        <button class="dir right">▶</button>
+      <div class="dpad" role="group" aria-label="On-screen D-pad">
+        <button class="dir spacer" aria-hidden="true" tabindex="-1"></button>
+        <button class="dir up" aria-label="Up">▲</button>
+        <button class="dir spacer" aria-hidden="true" tabindex="-1"></button>
+
+        <button class="dir left" aria-label="Left">◀</button>
+        <button class="dir center" aria-hidden="true" tabindex="-1"></button>
+        <button class="dir right" aria-label="Right">▶</button>
+
+        <button class="dir spacer" aria-hidden="true" tabindex="-1"></button>
+        <button class="dir down" aria-label="Down">▼</button>
+        <button class="dir spacer" aria-hidden="true" tabindex="-1"></button>
       </div>
-      <button class="dir down">▼</button>
     </div>
   </main>
   <script src="game.js"></script>

@@ -151,7 +151,12 @@ if(fullscreenBtn){
     try{
       if(!isFullscreen()){
         const target = canvasWrapper || canvas;
-        await requestFull(target);
+        try{
+          await requestFull(target);
+        }catch(err){
+          // fallback to pseudo-fullscreen on mobile / restricted browsers
+          enterPseudoFullscreen();
+        }
       } else {
         await exitFull();
       }
@@ -173,6 +178,8 @@ if(fullscreenBtn){
         touchControls.classList.remove('touch-hidden');
         touchControls.setAttribute('aria-hidden', 'false');
       } else {
+        // if we are in pseudo-fullscreen, do not restore yet
+        if(canvasWrapper.classList.contains('pseudo-fullscreen')) return;
         // restore original position
         if(originalTouchParent){
           if(originalNextSibling) originalTouchParent.insertBefore(touchControls, originalNextSibling);
@@ -196,6 +203,48 @@ if(fullscreenBtn){
   // ensure initial label
   updateFullscreenButton();
 }
+
+let pseudoActive = false;
+function enterPseudoFullscreen(){
+  if(!canvasWrapper) return;
+  if(pseudoActive) return;
+  // prevent body scroll
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+  canvasWrapper.classList.add('pseudo-fullscreen');
+  // move touch controls inside wrapper
+  if(touchControls) canvasWrapper.appendChild(touchControls);
+  touchControls.classList.remove('touch-hidden');
+  touchControls.setAttribute('aria-hidden','false');
+  pseudoActive = true;
+  fullscreenBtn.textContent = '⤡';
+  fullscreenBtn.setAttribute('aria-pressed','true');
+}
+
+function exitPseudoFullscreen(){
+  if(!pseudoActive) return;
+  canvasWrapper.classList.remove('pseudo-fullscreen');
+  document.documentElement.style.overflow = '';
+  document.body.style.overflow = '';
+  // restore touch controls to original place
+  if(originalTouchParent){
+    if(originalNextSibling) originalTouchParent.insertBefore(touchControls, originalNextSibling);
+    else originalTouchParent.appendChild(touchControls);
+  }
+  // hide on non-coarse pointers
+  if(window.matchMedia && window.matchMedia('(pointer:coarse)').matches){
+    touchControls.classList.remove('touch-hidden');
+  } else {
+    touchControls.classList.add('touch-hidden');
+  }
+  touchControls.setAttribute('aria-hidden', touchControls.classList.contains('touch-hidden') ? 'true' : 'false');
+  pseudoActive = false;
+  fullscreenBtn.textContent = '⤢';
+  fullscreenBtn.setAttribute('aria-pressed','false');
+}
+
+// If native exit happens, also clear pseudo state
+document.addEventListener('fullscreenchange', ()=>{ if(!isFullscreen() && pseudoActive) exitPseudoFullscreen(); });
 
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
