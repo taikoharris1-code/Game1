@@ -99,6 +99,21 @@ const GRID = 20;
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 const audioCtx = AudioCtx ? new AudioCtx() : null;
 let audioUnlocked = false;
+let eatBuffer = null;
+let eatAudio = null;
+let eatAudioReady = false;
+const EAT_SOUND_URL = 'Slurp - Sound Effect (HD).mp3';
+function loadEatSound(){
+  // Use HTMLAudioElement only to avoid decoding errors in WebAudio.
+  try{
+    eatAudio = new Audio(EAT_SOUND_URL);
+    eatAudio.preload = 'auto';
+    eatAudio.addEventListener('canplaythrough', ()=>{ eatAudioReady = true; }, {once:true});
+    eatAudio.load();
+  }catch(e){ console.warn('Failed to create eat audio element', e); }
+}
+// begin loading sample
+loadEatSound();
 
 // mandarin image (inline SVG) used for food and drop animation
 const mandarinSvg = `<?xml version="1.0" encoding="utf-8"?>
@@ -137,22 +152,44 @@ function unlockAudio(){
 }
 
 function playSound(type){
+  // Prefer the provided audio file for the eat sound. If an HTMLAudio element
+  // was created, try to play it immediately (clone to allow overlapping).
+  if(type === 'eat'){
+    if(eatAudio){
+      try{
+        const a = eatAudio.cloneNode();
+        a.volume = 1.0;
+        a.play().catch(()=>{});
+        return;
+      }catch(e){ console.warn('playSound eat audio element error', e); }
+    }
+    // If we decoded a buffer and WebAudio is ready, use it
+    if(eatBuffer && audioCtx && audioUnlocked){
+      try{
+        const now = audioCtx.currentTime;
+        const src = audioCtx.createBufferSource();
+        src.buffer = eatBuffer;
+        const g = audioCtx.createGain();
+        src.connect(g); g.connect(audioCtx.destination);
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.linearRampToValueAtTime(1.0, now+0.02);
+        g.gain.linearRampToValueAtTime(0.0001, now+0.6);
+        src.start(now);
+        src.stop(now+1.0);
+        return;
+      }catch(e){ console.warn('playSound eat buffer error', e); }
+    }
+    // If no sample available, do nothing for eat (no oscillator fallback)
+    return;
+  }
+
+  // Non-eat effects: require WebAudio and unlocked state
   if(!audioCtx || !audioUnlocked) return;
   const now = audioCtx.currentTime;
   const o = audioCtx.createOscillator();
   const g = audioCtx.createGain();
   o.connect(g); g.connect(audioCtx.destination);
-  if(type==='eat'){
-    // slurping juice sound - lower pitch sweep with wet envelope
-    o.type = 'triangle';
-    o.frequency.setValueAtTime(500, now);
-    o.frequency.exponentialRampToValueAtTime(150, now+0.35);
-    g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.18, now+0.05);
-    g.gain.exponentialRampToValueAtTime(0.08, now+0.2);
-    g.gain.exponentialRampToValueAtTime(0.0001, now+0.38);
-    o.start(now); o.stop(now+0.40);
-  } else if(type==='gameover'){
+  if(type==='gameover'){
     o.type = 'sawtooth';
     o.frequency.setValueAtTime(300, now);
     o.frequency.exponentialRampToValueAtTime(80, now+0.5);
