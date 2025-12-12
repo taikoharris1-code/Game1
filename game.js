@@ -499,13 +499,18 @@ resizeCanvas();
 if(startMenu){
   startMenu.classList.remove('hidden');
   // difficulty selection buttons in menu
-  const menuBtns = Array.from(startMenu.querySelectorAll('.start-btn'));
+  const menuBtns = Array.from(startMenu.querySelectorAll('.start-btn:not(.primary)'));
+  // disable start button initially
+  if(startBtn) startBtn.disabled = true;
+  
   menuBtns.forEach(b=>{
     const diff = b.dataset.diff;
     b.addEventListener('click', ()=>{
       // highlight selection
       menuBtns.forEach(x=>x.classList.remove('selected'));
       b.classList.add('selected');
+      // enable start button once a selection is made
+      if(startBtn) startBtn.disabled = false;
     });
   });
   // start button: optionally request fullscreen first, then start
