@@ -12,6 +12,8 @@ let baseSpeed = 100; // ms per step from slider
 const sensitivityEl = document.getElementById('sensitivity');
 const sensitivityValueEl = document.getElementById('sensitivityValue');
 const touchControls = document.getElementById('touch-controls');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const canvasWrapper = document.querySelector('.canvas-wrapper');
 
 // WebAudio for short effects
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -115,6 +117,33 @@ function gameOver(){
   clearInterval(timer);
   pauseBtn.textContent = 'Paused';
   setTimeout(()=> alert('Game Over — score: '+score), 50);
+}
+
+// Fullscreen handlers
+function isFullscreen(){
+  return document.fullscreenElement != null || document.webkitFullscreenElement != null;
+}
+
+function updateFullscreenButton(){
+  if(!fullscreenBtn) return;
+  fullscreenBtn.textContent = isFullscreen() ? '⤢' : '⤢';
+}
+
+if(fullscreenBtn){
+  fullscreenBtn.addEventListener('click', async ()=>{
+    try{
+      unlockAudio();
+      if(!isFullscreen()){
+        if(canvasWrapper.requestFullscreen) await canvasWrapper.requestFullscreen();
+        else if(canvasWrapper.webkitRequestFullscreen) await canvasWrapper.webkitRequestFullscreen();
+      } else {
+        if(document.exitFullscreen) await document.exitFullscreen();
+        else if(document.webkitExitFullscreen) await document.webkitExitFullscreen();
+      }
+    }catch(e){ console.warn('Fullscreen toggle failed', e); }
+  });
+  document.addEventListener('fullscreenchange', updateFullscreenButton);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
 }
 
 function draw(){

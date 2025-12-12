@@ -35,3 +35,12 @@ button:active{transform:translateY(1px)}
 	#score{font-size:15px}
 	button{padding:8px 12px}
 }
+
+/* canvas wrapper + fullscreen overlay */
+.canvas-wrapper{position:relative;display:inline-block;width:100%}
+.overlay-btn{position:absolute;right:8px;top:8px;z-index:30;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.06);color:#e6eef8;padding:6px 8px;border-radius:6px;backdrop-filter:blur(4px);cursor:pointer}
+.overlay-btn:active{transform:translateY(1px)}
+
+@media (max-width:420px){
+	.overlay-btn{right:10px;top:10px;padding:8px 10px;border-radius:8px}
+}
