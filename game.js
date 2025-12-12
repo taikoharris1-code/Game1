@@ -19,16 +19,17 @@ const startBtn = document.getElementById('startBtn');
 const startFullscreenCheckbox = document.getElementById('startFullscreen');
 
 function startGameWithDifficulty(diff){
-  // apply preset or custom and begin
+  // set baseSpeed directly (don't call applyDifficulty to avoid conflicts)
   if(diff === 'custom'){
-    // leave baseSpeed as slider value
     baseSpeed = Number(sensitivityEl.value);
+  } else if(diff in DIFFICULTY_PRESETS){
+    baseSpeed = DIFFICULTY_PRESETS[diff];
   } else {
-    applyDifficulty(diff);
+    baseSpeed = DIFFICULTY_PRESETS['normal'];
   }
   if(startMenu) startMenu.classList.add('hidden');
-  // animate a mandarin dropping into the initial food position, then start
-  const initialFood = food; // placeFood was called during reset-preview
+  // animate a mandarin dropping into the initial food position, then reset/start game
+  const initialFood = food; // placeFood was called during preview init
   animateMandarinDrop(initialFood, ()=>{ reset(); });
 }
 
@@ -228,6 +229,8 @@ function step(){
     clearInterval(timer); timer = setInterval(step, speed);
     playSound('eat');
     placeFood();
+    // animate mandarin drop for new food
+    animateMandarinDrop(food, ()=>{ /* animation complete */ });
   } else {
     snake.pop();
   }
