@@ -3,26 +3,13 @@ const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const restartBtn = document.getElementById('restart');
 const pauseBtn = document.getElementById('pause');
-
-const GRID = 20; // number of cells per row/col
-let CELL; // pixel size of a cell (computed from canvas size)
-let snake, dir, food, timer, speed, running, score;
-let baseSpeed = 100; // ms per step from slider
-
-const sensitivityEl = document.getElementById('sensitivity');
-const sensitivityValueEl = document.getElementById('sensitivityValue');
-const touchControls = document.getElementById('touch-controls');
-const fullscreenBtn = document.getElementById('fullscreenBtn');
-const canvasWrapper = document.querySelector('.canvas-wrapper');
 const startMenu = document.getElementById('startMenu');
 const startBtn = document.getElementById('startBtn');
 const startFullscreenCheckbox = document.getElementById('startFullscreen');
 
 function startGameWithDifficulty(diff){
-  // set baseSpeed directly (don't call applyDifficulty to avoid conflicts)
-  if(diff === 'custom'){
-    baseSpeed = Number(sensitivityEl.value);
-  } else if(diff in DIFFICULTY_PRESETS){
+  // set baseSpeed directly from difficulty preset
+  if(diff in DIFFICULTY_PRESETS){
     baseSpeed = DIFFICULTY_PRESETS[diff];
   } else {
     baseSpeed = DIFFICULTY_PRESETS['normal'];
@@ -166,24 +153,6 @@ function computeSpeed(){
   return Math.max(40, baseSpeed - Math.floor(score/5)*8);
 }
 
-function applyDifficulty(diff){
-  if(!diff) diff = 'normal';
-  if(diff in DIFFICULTY_PRESETS){
-    baseSpeed = DIFFICULTY_PRESETS[diff];
-    // update slider to reflect preset
-    sensitivityEl.value = baseSpeed;
-    sensitivityValueEl.textContent = baseSpeed;
-    // restart timer with new speed
-    speed = computeSpeed();
-    if(timer){ clearInterval(timer); timer = setInterval(step, speed); }
-  } else if(diff === 'custom'){
-    // keep current slider value as baseSpeed
-    baseSpeed = Number(sensitivityEl.value);
-    sensitivityValueEl.textContent = baseSpeed;
-    speed = computeSpeed();
-    if(timer){ clearInterval(timer); timer = setInterval(step, speed); }
-  }
-}
 
 function reset(){
   snake = [{x: Math.floor(GRID/2), y: Math.floor(GRID/2)}];
@@ -464,20 +433,6 @@ function togglePause(){
   pauseBtn.textContent = running ? 'Pause' : 'Resume';
 }
 
-// sensitivity slider handling
-sensitivityEl.addEventListener('input', (e)=>{
-  baseSpeed = Number(e.target.value);
-  sensitivityValueEl.textContent = baseSpeed;
-  // when user changes slider, set difficulty to custom
-  if(difficultyEl) difficultyEl.value = 'custom';
-  speed = computeSpeed();
-  if(timer){ clearInterval(timer); timer = setInterval(step, speed); }
-});
-
-if(difficultyEl){
-  difficultyEl.addEventListener('change', (e)=>{ applyDifficulty(e.target.value); });
-}
-
 // touch/swipe controls
 let tStartX=0, tStartY=0;
 window.addEventListener('touchstart', e=>{
@@ -551,10 +506,6 @@ if(startMenu){
       // highlight selection
       menuBtns.forEach(x=>x.classList.remove('selected'));
       b.classList.add('selected');
-      // update difficulty select so HUD reflects choice
-      if(difficultyEl) difficultyEl.value = diff;
-      // if preset, apply immediately so slider updates for custom preview
-      if(diff !== 'custom') applyDifficulty(diff);
     });
   });
   // start button: optionally request fullscreen first, then start
@@ -571,5 +522,4 @@ if(startMenu){
 snake = [{x: Math.floor(GRID/2), y: Math.floor(GRID/2)}];
 CELL = canvas.width / GRID;
 placeFood();
-draw();
 draw();
