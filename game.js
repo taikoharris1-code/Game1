@@ -14,11 +14,114 @@ const sensitivityValueEl = document.getElementById('sensitivityValue');
 const touchControls = document.getElementById('touch-controls');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
 const canvasWrapper = document.querySelector('.canvas-wrapper');
+const startMenu = document.getElementById('startMenu');
+const startBtn = document.getElementById('startBtn');
+const startFullscreenCheckbox = document.getElementById('startFullscreen');
+
+function startGameWithDifficulty(diff){
+  // apply preset or custom and begin
+  if(diff === 'custom'){
+    // leave baseSpeed as slider value
+    baseSpeed = Number(sensitivityEl.value);
+  } else {
+    applyDifficulty(diff);
+  }
+  if(startMenu) startMenu.classList.add('hidden');
+  // animate a mandarin dropping into the initial food position, then start
+  const initialFood = food; // placeFood was called during reset-preview
+  animateMandarinDrop(initialFood, ()=>{ reset(); });
+}
+
+// animate a mandarin dropping from top-center into the given cell position
+function animateMandarinDrop(cellPos, cb){
+  if(!cellPos) { if(cb) cb(); return; }
+  // ensure image loaded
+  const startAnim = ()=>{
+    const canvasRect = canvas.getBoundingClientRect();
+    const displayCell = canvasRect.width / GRID;
+    const size = Math.max(32, Math.min(64, Math.floor(displayCell * 0.9)));
+    const startX = canvasRect.left + canvasRect.width/2 - size/2;
+    const startY = canvasRect.top - size - 8;
+    const destX = canvasRect.left + (cellPos.x * displayCell) + (displayCell - size)/2;
+    const destY = canvasRect.top + (cellPos.y * displayCell) + (displayCell - size)/2;
+
+    const img = document.createElement('img');
+    img.src = mandarinDataUrl;
+    img.className = 'drop-fruit';
+    img.style.position = 'fixed';
+    img.style.left = startX + 'px';
+    img.style.top = startY + 'px';
+    img.style.width = size + 'px';
+    img.style.height = size + 'px';
+    img.style.transition = 'transform 560ms cubic-bezier(.2,.9,.2,1), top 560ms cubic-bezier(.2,.9,.2,1), left 560ms cubic-bezier(.2,.9,.2,1)';
+    img.style.zIndex = 4000;
+    img.style.pointerEvents = 'none';
+    document.body.appendChild(img);
+
+    // small rotate/scale during flight
+    requestAnimationFrame(()=>{
+      img.style.transform = 'translate(' + (destX - startX) + 'px,' + (destY - startY) + 'px) scale(1) rotate(10deg)';
+    });
+
+    function done(){
+      img.remove();
+      if(cb) cb();
+    }
+    img.addEventListener('transitionend', done, {once:true});
+    // safety fallback
+    setTimeout(()=>{ if(document.body.contains(img)) { img.remove(); if(cb) cb(); } }, 900);
+  };
+
+  if(mandImg.complete && mandImg.naturalWidth){ startAnim(); }
+  else mandImg.onload = startAnim;
+}
+
+// helper to attempt entering native fullscreen or fallback to pseudo
+async function maybeEnterFullscreenBeforeStart(){
+  if(startFullscreenCheckbox && startFullscreenCheckbox.checked){
+    if(!isFullscreen()){
+      const target = canvasWrapper || canvas;
+      try{
+        const r = target.requestFullscreen || target.webkitRequestFullscreen || target.mozRequestFullScreen || target.msRequestFullscreen;
+        if(r) await r.call(target);
+        else enterPseudoFullscreen();
+      }catch(e){
+        // fallback
+        enterPseudoFullscreen();
+      }
+    }
+  }
+}
+const difficultyEl = document.getElementById('difficulty');
+
+// difficulty presets map to baseSpeed (ms per step)
+const DIFFICULTY_PRESETS = {
+  easy: 200,
+  normal: 120,
+  hard: 70
+};
 
 // WebAudio for short effects
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 const audioCtx = AudioCtx ? new AudioCtx() : null;
 let audioUnlocked = false;
+
+// mandarin image (inline SVG) used for food and drop animation
+const mandarinSvg = `<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+  <defs>
+    <radialGradient id='g' cx='30%' cy='30%'>
+      <stop offset='0%' stop-color='#fff7e6'/>
+      <stop offset='40%' stop-color='#ffb347'/>
+      <stop offset='100%' stop-color='#ff7f11'/>
+    </radialGradient>
+  </defs>
+  <circle cx='50' cy='50' r='40' fill='url(#g)' stroke='#e86a00' stroke-width='3'/>
+  <path d='M68 25c6-2 12 1 10 3-2 2-8 4-12 3' fill='none' stroke='#2b7a00' stroke-width='3' stroke-linecap='round'/>
+  <path d='M48 18c-1-6-8-9-11-7-3 2 0 8 2 10' fill='none' stroke='#2b7a00' stroke-width='3' stroke-linecap='round'/>
+</svg>`;
+const mandarinDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(mandarinSvg);
+const mandImg = new Image(); mandImg.src = mandarinDataUrl;
 
 function unlockAudio(){
   if(!audioCtx || audioUnlocked) return;
@@ -60,6 +163,25 @@ function playSound(type){
 function computeSpeed(){
   // speed decreases (faster) by 8ms every 5 points, min 40
   return Math.max(40, baseSpeed - Math.floor(score/5)*8);
+}
+
+function applyDifficulty(diff){
+  if(!diff) diff = 'normal';
+  if(diff in DIFFICULTY_PRESETS){
+    baseSpeed = DIFFICULTY_PRESETS[diff];
+    // update slider to reflect preset
+    sensitivityEl.value = baseSpeed;
+    sensitivityValueEl.textContent = baseSpeed;
+    // restart timer with new speed
+    speed = computeSpeed();
+    if(timer){ clearInterval(timer); timer = setInterval(step, speed); }
+  } else if(diff === 'custom'){
+    // keep current slider value as baseSpeed
+    baseSpeed = Number(sensitivityEl.value);
+    sensitivityValueEl.textContent = baseSpeed;
+    speed = computeSpeed();
+    if(timer){ clearInterval(timer); timer = setInterval(step, speed); }
+  }
 }
 
 function reset(){
@@ -219,6 +341,8 @@ function enterPseudoFullscreen(){
   pseudoActive = true;
   fullscreenBtn.textContent = '⤡';
   fullscreenBtn.setAttribute('aria-pressed','true');
+  // adjust canvas to fit available space (stacked controls)
+  adjustCanvasForFullscreen();
 }
 
 function exitPseudoFullscreen(){
@@ -241,10 +365,50 @@ function exitPseudoFullscreen(){
   pseudoActive = false;
   fullscreenBtn.textContent = '⤢';
   fullscreenBtn.setAttribute('aria-pressed','false');
+  // restore canvas sizing
+  restoreCanvasSize();
 }
 
 // If native exit happens, also clear pseudo state
 document.addEventListener('fullscreenchange', ()=>{ if(!isFullscreen() && pseudoActive) exitPseudoFullscreen(); });
+
+// When fullscreen (native or pseudo) we want to size the canvas to available
+// wrapper area minus controls. Use devicePixelRatio for crisp rendering.
+function adjustCanvasForFullscreen(){
+  if(!canvasWrapper || !canvas) return;
+  // ensure controls are visible and inside wrapper
+  if(touchControls && touchControls.parentNode !== canvasWrapper){
+    try{ canvasWrapper.appendChild(touchControls); }catch(e){}
+  }
+  // compute available area inside wrapper
+  const wrapRect = canvasWrapper.getBoundingClientRect();
+  let controlsH = 0;
+  if(touchControls){
+    // make controls visible to measure
+    touchControls.classList.remove('touch-hidden');
+    const cr = touchControls.getBoundingClientRect();
+    controlsH = cr.height || 0;
+  }
+  const availW = Math.max(100, Math.floor(wrapRect.width));
+  const availH = Math.max(100, Math.floor(wrapRect.height - controlsH - 12));
+  const dpr = window.devicePixelRatio || 1;
+  // set CSS size and backing store size
+  canvas.style.width = availW + 'px';
+  canvas.style.height = availH + 'px';
+  canvas.width = Math.max(100, Math.floor(availW * dpr));
+  canvas.height = Math.max(100, Math.floor(availH * dpr));
+  CELL = canvas.width / GRID;
+  draw();
+}
+
+function restoreCanvasSize(){
+  // revert to responsive behaviour
+  resizeCanvas();
+}
+
+// call adjust when entering/exiting native fullscreen
+document.addEventListener('fullscreenchange', ()=>{ if(isFullscreen()) adjustCanvasForFullscreen(); else restoreCanvasSize(); });
+document.addEventListener('webkitfullscreenchange', ()=>{ if(isFullscreen()) adjustCanvasForFullscreen(); else restoreCanvasSize(); });
 
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -253,8 +417,15 @@ function draw(){
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
   // draw food
-  ctx.fillStyle = '#ff6666';
-  drawCell(food.x, food.y);
+  // draw mandarin fruit (use image when available, fallback to circle)
+  if(mandImg && mandImg.complete && mandImg.naturalWidth){
+    const pad = Math.max(2, Math.floor(CELL*0.08));
+    const w = Math.max(4, Math.floor(CELL - pad*2));
+    ctx.drawImage(mandImg, Math.floor(food.x*CELL + pad), Math.floor(food.y*CELL + pad), w, w);
+  } else {
+    ctx.fillStyle = '#ff6666';
+    drawCell(food.x, food.y);
+  }
 
   // draw snake
   for(let i=0;i<snake.length;i++){
@@ -294,9 +465,15 @@ function togglePause(){
 sensitivityEl.addEventListener('input', (e)=>{
   baseSpeed = Number(e.target.value);
   sensitivityValueEl.textContent = baseSpeed;
+  // when user changes slider, set difficulty to custom
+  if(difficultyEl) difficultyEl.value = 'custom';
   speed = computeSpeed();
   if(timer){ clearInterval(timer); timer = setInterval(step, speed); }
 });
+
+if(difficultyEl){
+  difficultyEl.addEventListener('change', (e)=>{ applyDifficulty(e.target.value); });
+}
 
 // touch/swipe controls
 let tStartX=0, tStartY=0;
@@ -359,5 +536,37 @@ window.addEventListener('touchstart', ()=>unlockAudio(), {passive:true});
 window.addEventListener('mousedown', ()=>unlockAudio(), {passive:true});
 
 resizeCanvas();
-reset();
+
+// show start menu and prepare a preview (do not start until user picks)
+if(startMenu){
+  startMenu.classList.remove('hidden');
+  // difficulty selection buttons in menu
+  const menuBtns = Array.from(startMenu.querySelectorAll('.start-btn'));
+  menuBtns.forEach(b=>{
+    const diff = b.dataset.diff;
+    b.addEventListener('click', ()=>{
+      // highlight selection
+      menuBtns.forEach(x=>x.classList.remove('selected'));
+      b.classList.add('selected');
+      // update difficulty select so HUD reflects choice
+      if(difficultyEl) difficultyEl.value = diff;
+      // if preset, apply immediately so slider updates for custom preview
+      if(diff !== 'custom') applyDifficulty(diff);
+    });
+  });
+  // start button: optionally request fullscreen first, then start
+  if(startBtn){
+    startBtn.addEventListener('click', async ()=>{
+      const sel = menuBtns.find(x=>x.classList.contains('selected'));
+      const diff = sel ? sel.dataset.diff : 'normal';
+      await maybeEnterFullscreenBeforeStart();
+      startGameWithDifficulty(diff);
+    });
+  }
+}
+// draw an initial preview snake on canvas
+snake = [{x: Math.floor(GRID/2), y: Math.floor(GRID/2)}];
+CELL = canvas.width / GRID;
+placeFood();
+draw();
 draw();

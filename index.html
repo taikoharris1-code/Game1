@@ -14,12 +14,36 @@
       <label id="sensitivityLabel" for="sensitivity">Speed:</label>
       <input id="sensitivity" type="range" min="40" max="200" step="10" value="100">
       <span id="sensitivityValue">100</span>
+      <label id="difficultyLabel" for="difficulty">Difficulty:</label>
+      <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard</option>
+        <option value="custom">Custom</option>
+      </select>
       <button id="restart">Restart</button>
       <button id="pause">Pause</button>
     </div>
     <div class="canvas-wrapper">
       <canvas id="game" width="400" height="400"></canvas>
       <button id="fullscreenBtn" class="overlay-btn" aria-label="Toggle fullscreen">⤢</button>
+    </div>
+    <div id="startMenu" class="start-overlay">
+      <div class="start-card">
+        <h2>Start Game</h2>
+        <p>Select difficulty to begin</p>
+        <div class="start-options">
+          <button class="start-btn" data-diff="easy">Easy</button>
+          <button class="start-btn selected" data-diff="normal">Normal</button>
+          <button class="start-btn" data-diff="hard">Hard</button>
+          <button class="start-btn" data-diff="custom">Custom</button>
+        </div>
+        <div class="start-controls">
+          <label><input type="checkbox" id="startFullscreen"> Start in fullscreen</label>
+          <button id="startBtn" class="start-btn primary">Start</button>
+        </div>
+        <small class="start-hint">You can adjust speed later with the slider.</small>
+      </div>
     </div>
     <div id="hint">Use arrow keys to move. Space to pause.</div>
 
