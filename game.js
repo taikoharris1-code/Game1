@@ -141,12 +141,15 @@ if(fullscreenBtn){
     return e.call(document);
   };
 
+  // keep reference to original parent so we can restore touch controls
+  const originalTouchParent = touchControls ? touchControls.parentNode : null;
+  const originalNextSibling = touchControls ? touchControls.nextSibling : null;
+
   fullscreenBtn.addEventListener('click', async (ev)=>{
     ev.preventDefault(); ev.stopPropagation();
     unlockAudio();
     try{
       if(!isFullscreen()){
-        // prefer the wrapper, fallback to canvas
         const target = canvasWrapper || canvas;
         await requestFull(target);
       } else {
@@ -157,12 +160,33 @@ if(fullscreenBtn){
     }
   });
 
-  // update the button icon when fullscreen state changes
+  // update the button icon when fullscreen state changes and move touch controls
   function onFullChange(){
     const fs = isFullscreen();
-    // show different glyphs to indicate state
     fullscreenBtn.textContent = fs ? '⤡' : '⤢';
     fullscreenBtn.setAttribute('aria-pressed', fs ? 'true' : 'false');
+
+    if(touchControls){
+      if(fs){
+        // move controls inside the wrapper so they overlay the canvas
+        try{ canvasWrapper.appendChild(touchControls); }catch(e){}
+        touchControls.classList.remove('touch-hidden');
+        touchControls.setAttribute('aria-hidden', 'false');
+      } else {
+        // restore original position
+        if(originalTouchParent){
+          if(originalNextSibling) originalTouchParent.insertBefore(touchControls, originalNextSibling);
+          else originalTouchParent.appendChild(touchControls);
+        }
+        // hide on non-coarse pointers
+        if(window.matchMedia && window.matchMedia('(pointer:coarse)').matches){
+          touchControls.classList.remove('touch-hidden');
+        } else {
+          touchControls.classList.add('touch-hidden');
+        }
+        touchControls.setAttribute('aria-hidden', touchControls.classList.contains('touch-hidden') ? 'true' : 'false');
+      }
+    }
   }
 
   document.addEventListener('fullscreenchange', onFullChange);
