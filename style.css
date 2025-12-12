@@ -38,7 +38,8 @@ button:active{transform:translateY(1px)}
 
 /* canvas wrapper + fullscreen overlay */
 .canvas-wrapper{position:relative;display:inline-block;width:100%}
-.overlay-btn{position:absolute;right:8px;top:8px;z-index:30;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.06);color:#e6eef8;padding:6px 8px;border-radius:6px;backdrop-filter:blur(4px);cursor:pointer}
+
+.overlay-btn{position:absolute;right:8px;top:8px;z-index:60;background:rgba(0,0,0,0.20);border:1px solid rgba(255,255,255,0.08);color:#e6eef8;padding:10px 12px;border-radius:10px;backdrop-filter:blur(6px);cursor:pointer;font-size:20px}
 .overlay-btn:active{transform:translateY(1px)}
 
 @media (max-width:420px){

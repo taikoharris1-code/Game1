@@ -130,20 +130,47 @@ function updateFullscreenButton(){
 }
 
 if(fullscreenBtn){
-  fullscreenBtn.addEventListener('click', async ()=>{
+  const requestFull = (el)=>{
+    const r = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if(!r) return Promise.reject(new Error('requestFullscreen not supported'));
+    return r.call(el);
+  };
+  const exitFull = ()=>{
+    const e = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+    if(!e) return Promise.reject(new Error('exitFullscreen not supported'));
+    return e.call(document);
+  };
+
+  fullscreenBtn.addEventListener('click', async (ev)=>{
+    ev.preventDefault(); ev.stopPropagation();
+    unlockAudio();
     try{
-      unlockAudio();
       if(!isFullscreen()){
-        if(canvasWrapper.requestFullscreen) await canvasWrapper.requestFullscreen();
-        else if(canvasWrapper.webkitRequestFullscreen) await canvasWrapper.webkitRequestFullscreen();
+        // prefer the wrapper, fallback to canvas
+        const target = canvasWrapper || canvas;
+        await requestFull(target);
       } else {
-        if(document.exitFullscreen) await document.exitFullscreen();
-        else if(document.webkitExitFullscreen) await document.webkitExitFullscreen();
+        await exitFull();
       }
-    }catch(e){ console.warn('Fullscreen toggle failed', e); }
+    }catch(e){
+      console.warn('Fullscreen toggle failed', e);
+    }
   });
-  document.addEventListener('fullscreenchange', updateFullscreenButton);
-  document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+
+  // update the button icon when fullscreen state changes
+  function onFullChange(){
+    const fs = isFullscreen();
+    // show different glyphs to indicate state
+    fullscreenBtn.textContent = fs ? '⤡' : '⤢';
+    fullscreenBtn.setAttribute('aria-pressed', fs ? 'true' : 'false');
+  }
+
+  document.addEventListener('fullscreenchange', onFullChange);
+  document.addEventListener('webkitfullscreenchange', onFullChange);
+  document.addEventListener('mozfullscreenchange', onFullChange);
+  document.addEventListener('MSFullscreenChange', onFullChange);
+  // ensure initial label
+  updateFullscreenButton();
 }
 
 function draw(){
