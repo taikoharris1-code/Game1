@@ -92,6 +92,9 @@ const DIFFICULTY_PRESETS = {
   hard: 70
 };
 
+// grid size
+const GRID = 20;
+
 // WebAudio for short effects
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 const audioCtx = AudioCtx ? new AudioCtx() : null;
@@ -114,6 +117,17 @@ const mandarinSvg = `<?xml version="1.0" encoding="utf-8"?>
 const mandarinDataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(mandarinSvg);
 const mandImg = new Image(); mandImg.src = mandarinDataUrl;
 
+// game state variables
+let snake = [];
+let dir = {x:0, y:0};
+let food = {x:0, y:0};
+let timer = null;
+let speed = 120;
+let running = false;
+let score = 0;
+let baseSpeed = 120;
+let CELL = 0;
+
 function unlockAudio(){
   if(!audioCtx || audioUnlocked) return;
   // resume on first user gesture
@@ -129,11 +143,15 @@ function playSound(type){
   const g = audioCtx.createGain();
   o.connect(g); g.connect(audioCtx.destination);
   if(type==='eat'){
-    o.frequency.value = 800;
+    // slurping juice sound - lower pitch sweep with wet envelope
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(500, now);
+    o.frequency.exponentialRampToValueAtTime(150, now+0.35);
     g.gain.setValueAtTime(0.0001, now);
-    g.gain.exponentialRampToValueAtTime(0.12, now+0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, now+0.15);
-    o.start(now); o.stop(now+0.16);
+    g.gain.exponentialRampToValueAtTime(0.18, now+0.05);
+    g.gain.exponentialRampToValueAtTime(0.08, now+0.2);
+    g.gain.exponentialRampToValueAtTime(0.0001, now+0.38);
+    o.start(now); o.stop(now+0.40);
   } else if(type==='gameover'){
     o.type = 'sawtooth';
     o.frequency.setValueAtTime(300, now);
@@ -470,9 +488,10 @@ if(touchControls){
     else if(cls.contains('left')) d = [-1,0];
     else if(cls.contains('right')) d = [1,0];
     if(!d) return;
-    const handler = (ev)=>{ ev.preventDefault(); setDirection(d[0], d[1]); };
-    btn.addEventListener('touchstart', ev=>{ unlockAudio(); handler(ev); });
-    btn.addEventListener('mousedown', ev=>{ unlockAudio(); handler(ev); });
+    const handler = (ev)=>{ ev.preventDefault(); unlockAudio(); setDirection(d[0], d[1]); playSound('turn'); };
+    btn.addEventListener('touchstart', handler, {passive:false});
+    btn.addEventListener('mousedown', handler, {passive:false});
+    btn.addEventListener('pointerdown', handler, {passive:false});
   });
 }
 
@@ -494,6 +513,11 @@ window.addEventListener('resize', resizeCanvas);
 // set initial slider display and unlock on first gesture
 window.addEventListener('touchstart', ()=>unlockAudio(), {passive:true});
 window.addEventListener('mousedown', ()=>unlockAudio(), {passive:true});
+
+// initialize preview state before first draw
+snake = [{x: Math.floor(GRID/2), y: Math.floor(GRID/2)}];
+food = {x: 0, y: 0}; // placeholder, will be placed below
+placeFood();
 
 resizeCanvas();
 
@@ -532,8 +556,3 @@ if(startMenu){
     });
   }
 }
-// draw an initial preview snake on canvas
-snake = [{x: Math.floor(GRID/2), y: Math.floor(GRID/2)}];
-CELL = canvas.width / GRID;
-placeFood();
-draw();
